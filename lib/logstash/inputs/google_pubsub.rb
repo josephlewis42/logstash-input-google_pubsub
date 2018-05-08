@@ -128,7 +128,7 @@ require 'logstash-input-google_pubsub_jars.rb'
 # `[@metadata][pubsub_message]` field so you can fetch:
 #
 # * Message attributes
-# * The origiginal base64 data
+# * The original base64 data
 # * Pub/Sub message ID for de-duplication
 # * Publish time
 #
@@ -153,6 +153,12 @@ require 'logstash-input-google_pubsub_jars.rb'
 #
 # output {...}
 # ----------------------------------
+#
+# === Testing
+#
+# You can test the plugin using the official
+# https://cloud.google.com/pubsub/docs/emulator[Pub/Sub Emulator]
+# by setting the environment variable `PUBSUB_EMULATOR_HOST` to its correct host and port value.
 #
 
 class LogStash::Inputs::GooglePubSub < LogStash::Inputs::Base
@@ -261,18 +267,21 @@ class LogStash::Inputs::GooglePubSub < LogStash::Inputs::Base
       @logger.error("#{failure}")
       raise failure
     end
+
     flowControlSettings = FlowControlSettings.newBuilder().setMaxOutstandingElementCount(@max_messages).build()
     executorProvider = InstantiatingExecutorProvider.newBuilder().setExecutorThreadCount(1).build()
     subscriberBuilder = Subscriber.newBuilder(@subscription_name, handler)
       .setFlowControlSettings(flowControlSettings)
       .setExecutorProvider(executorProvider)
       .setParallelPullCount(1)
+      .setChannelProvider(construct_transport_provider)
 
     if @credentialsProvider
       subscriberBuilder.setCredentialsProvider(@credentialsProvider)
     end
     @subscriber = subscriberBuilder.build()
     @subscriber.addListener(listener, MoreExecutors.directExecutor())
+    @logger.info('Listening for new events')
     @subscriber.startAsync()
     @subscriber.awaitTerminated()
   end
@@ -284,5 +293,28 @@ class LogStash::Inputs::GooglePubSub < LogStash::Inputs::Base
       messageId: java_message.getMessageId(),
       publishTime: Timestamps.toString(java_message.getPublishTime())
     }
+  end
+
+  java_import 'com.google.api.gax.rpc.FixedHeaderProvider'
+  def http_headers
+    gem_name = 'logstash-input-google_pubsub'
+    gem_version = '1.2.0'
+    user_agent = "Elastic/#{gem_name} version/#{gem_version}"
+
+    FixedHeaderProvider.create({'User-Agent' => user_agent})
+  end
+
+  java_import 'com.google.cloud.pubsub.v1.SubscriptionAdminSettings'
+  def construct_transport_provider
+    pubsub_addr = 'pubsub.googleapis.com:443'
+    emulator_addr = ENV['PUBSUB_EMULATOR_HOST']
+    api_address = emulator_addr || pubsub_addr
+
+    @logger.info("Connecting to Pub/Sub API at: #{api_address}")
+
+    SubscriptionAdminSettings.defaultGrpcTransportProviderBuilder()
+        .setEndpoint(api_address)
+        .setHeaderProvider(http_headers)
+        .build()
   end
 end

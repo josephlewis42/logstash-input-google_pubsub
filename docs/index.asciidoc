@@ -21,31 +21,12 @@ include::{include_path}/plugin_header.asciidoc[]
 
 ==== Description
 
-Author: Eric Johnson <erjohnso@google.com>
-Date: 2016-06-01
+This plugin ingests data from Google Cloud Pub/Sub.
 
-Copyright 2016 Google Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-Google deps
-This is a https://github.com/elastic/logstash[Logstash] input plugin for 
-https://cloud.google.com/pubsub/[Google Pub/Sub]. The plugin can subscribe 
-to a topic and ingest messages.
-
-The main motivation behind the development of this plugin was to ingest 
+The main motivation behind its development was to ingest
 https://cloud.google.com/logging/[Stackdriver Logging] messages via the 
 https://cloud.google.com/logging/docs/export/using_exported_logs[Exported Logs] 
-feature of Stackdriver Logging.
+feature.
 
 ==== Prerequisites
 
@@ -98,7 +79,7 @@ specify a JSON private key file in your config.
 If you intend to use the logstash plugin for Stackdriver Logging message 
 ingestion, you must first manually set up the Export option to Cloud Pub/Sub and 
 the manually create the `topic`. Please see the more detailed instructions at, 
-https://cloud.google.com/logging/docs/export/using_exported_logs [Exported Logs] 
+https://cloud.google.com/logging/docs/export/using_exported_logs[Exported Logs]
 and ensure that the https://cloud.google.com/logging/docs/export/configure_export#manual-access-pubsub[necessary permissions] 
 have also been manually configured.
 
@@ -149,7 +130,7 @@ The original Pub/Sub message is preserved in the special Logstash
 `[@metadata][pubsub_message]` field so you can fetch:
 
 * Message attributes
-* The origiginal base64 data
+* The original base64 data
 * Pub/Sub message ID for de-duplication
 * Publish time
 
@@ -174,6 +155,12 @@ filter {
 
 output {...}
 ----------------------------------
+
+==== Testing
+
+You can test the plugin using the official
+https://cloud.google.com/pubsub/docs/emulator[Pub/Sub Emulator]
+by setting the environment variable `PUBSUB_EMULATOR_HOST` to its correct host and port value.
 
 
 [id="plugins-{type}s-{plugin}-options"]
